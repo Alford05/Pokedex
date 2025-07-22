@@ -26,6 +26,19 @@ func commandMapf(cfg *config) error {
 	} else {
 		url = cfg.NextURL
 	}
+	var mapData MapList
+
+	if entry, ok := cfg.Pokecache.Get(url); ok {
+		if err := json.Unmarshal(entry, &mapData); err != nil {
+			return fmt.Errorf("failed to decode data from cache: %w", err)
+		}
+		for _, area := range mapData.Results {
+			fmt.Println(area.Name)
+		}
+		cfg.NextURL = mapData.Next
+		cfg.PrevURL = mapData.Previous
+		return nil
+	}
 	res, err := http.Get(url)
 	if err != nil {
 		return fmt.Errorf("failed to fetch map data: %w", err)
@@ -36,8 +49,7 @@ func commandMapf(cfg *config) error {
 	if err != nil {
 		return fmt.Errorf("failed to read response body: %w", err)
 	}
-	var mapData MapList
-
+	cfg.Pokecache.Add(url, body)
 	if err := json.Unmarshal(body, &mapData); err != nil {
 		return fmt.Errorf("failed to decode map data: %w", err)
 	}
@@ -56,6 +68,19 @@ func commandMapb(cfg *config) error {
 		return nil
 	}
 	var url string = cfg.PrevURL
+	var mapData MapList
+
+	if entry, ok := cfg.Pokecache.Get(url); ok {
+		if err := json.Unmarshal(entry, &mapData); err != nil {
+			return fmt.Errorf("failed to decode data from cache: %w", err)
+		}
+		for _, area := range mapData.Results {
+			fmt.Println(area.Name)
+		}
+		cfg.NextURL = mapData.Next
+		cfg.PrevURL = mapData.Previous
+		return nil
+	}
 	res, err := http.Get(url)
 	if err != nil {
 		return fmt.Errorf("failed to fetch map data: %w", err)
@@ -65,7 +90,7 @@ func commandMapb(cfg *config) error {
 	if err != nil {
 		return fmt.Errorf("failed to read response body: %w", err)
 	}
-	var mapData MapList
+	cfg.Pokecache.Add(url, body)
 
 	if err := json.Unmarshal(body, &mapData); err != nil {
 		return fmt.Errorf("failed to decode map data: %w", err)
